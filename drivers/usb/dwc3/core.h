@@ -118,6 +118,7 @@
 #define DWC3_GPRTBIMAP_FS0	0xc188
 #define DWC3_GPRTBIMAP_FS1	0xc18c
 #define DWC3_GUCTL2		0xc19c
+#define DWC3_GUCTL3		0xc60c
 
 #define DWC3_VER_NUMBER		0xc1a0
 #define DWC3_VER_TYPE		0xc1a4
@@ -384,6 +385,7 @@
 
 /* Global User Control Register 3 */
 #define DWC3_GUCTL3_SPLITDISABLE		BIT(14)
+#define DWC3_GUCTL3_USB20_RETRY_DISABLE		BIT(16)
 
 /* Device Configuration Register */
 #define DWC3_DCFG_DEVADDR(addr)	((addr) << 3)
@@ -1180,7 +1182,8 @@ struct dwc3 {
 #define DWC31_VERSIONTYPE_EA04		0x65613034
 #define DWC31_VERSIONTYPE_EA05		0x65613035
 #define DWC31_VERSIONTYPE_EA06		0x65613036
-
+#define DWC31_VERSIONTYPE_GA		0x67612a2a
+	
 	enum dwc3_ep0_next	ep0_next_event;
 	enum dwc3_ep0_state	ep0state;
 	enum dwc3_link_state	link_state;
