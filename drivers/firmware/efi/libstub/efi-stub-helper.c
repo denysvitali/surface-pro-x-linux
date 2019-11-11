@@ -454,7 +454,7 @@ efi_status_t efi_exit_boot_services(void *handle,
 	status = efi_bs_call(exit_boot_services, handle, *map->key_ptr);
 
 	if (status == EFI_INVALID_PARAMETER) {
-		pr_efi(sys_table_arg, "\tInvalid Parameter\n");
+		// efi_warn("Invalid Parameter\n");
 		return EFI_SUCCESS;
 
 		/*
