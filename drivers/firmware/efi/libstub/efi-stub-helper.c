@@ -454,6 +454,9 @@ efi_status_t efi_exit_boot_services(void *handle,
 	status = efi_bs_call(exit_boot_services, handle, *map->key_ptr);
 
 	if (status == EFI_INVALID_PARAMETER) {
+		efi_info("Invalid Parameter\n");
+		return EFI_SUCCESS;
+
 		/*
 		 * The memory map changed between efi_get_memory_map() and
 		 * exit_boot_services().  Per the UEFI Spec v2.6, Section 6.4:
