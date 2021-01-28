@@ -1035,7 +1035,7 @@ static int dwc3_core_init(struct dwc3 *dwc)
 	 * USB2.0 EP NAKs continuously requires to disable internal retry
 	 * feature
 	 */
-	if ((dwc->revision == DWC3_USB31_REVISION_170A) &&
+	if ((dwc->revision == DWC31_REVISION_170A) &&
 		(dwc->version_type == DWC31_VERSIONTYPE_GA)) {
 		reg = dwc3_readl(dwc->regs, DWC3_GUCTL3);
 		reg |= DWC3_GUCTL3_USB20_RETRY_DISABLE;
