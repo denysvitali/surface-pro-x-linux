@@ -7,6 +7,7 @@
  * Copyright (C) 2013, 2014 Linaro Ltd.
  */
 
+#include <linux/dmi.h>
 #include <linux/efi.h>
 #include <linux/init.h>
 
@@ -138,8 +139,9 @@ static const struct dmi_system_id efi_reboot_broken_table[] = {
  */
 bool efi_poweroff_required(void)
 {
-  if (dmi_check_system(efi_reboot_broken_table))
+	if (dmi_check_system(efi_reboot_broken_table))
 		return false;
+
 	return efi_enabled(EFI_RUNTIME_SERVICES);
 }
 
