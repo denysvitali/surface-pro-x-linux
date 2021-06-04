@@ -453,7 +453,6 @@ static long ssam_cdev_event_disable(struct ssam_cdev_client *client,
 	return ssam_controller_event_disable(client->cdev->ctrl, reg, id, desc.flags);
 }
 
-
 /* -- File operations. ------------------------------------------------------ */
 
 static int ssam_cdev_device_open(struct inode *inode, struct file *filp)
