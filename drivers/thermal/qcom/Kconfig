@@ -41,3 +41,14 @@ config QCOM_LMH
 	  input from temperature and current sensors.  On many newer Qualcomm SoCs
 	  LMh is configured in the firmware and this feature need not be enabled.
 	  However, on certain SoCs like sdm845 LMh has to be configured from kernel.
+
+config QTI_BCL_PMIC5
+        bool "BCL driver for BCL peripherals in PMIC5"
+	depends on SPMI && THERMAL_OF
+	help
+	  Say Y here to enable this BCL driver for PMIC5. This driver
+	  provides routines to configure and monitor the BCL
+	  PMIC peripheral. This driver registers the battery current and
+	  voltage sensors with the thermal core framework and can take
+	  threshold input and notify the thermal core when the threshold is
+	  reached.
