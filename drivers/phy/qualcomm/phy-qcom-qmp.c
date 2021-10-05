@@ -4357,22 +4357,27 @@ static bool qcom_qmp_phy_configure_dp_mode(struct qmp_phy *qphy)
 {
 	const struct phy_configure_opts_dp *dp_opts = &qphy->dp_opts;
 	void __iomem *dp_com = qphy->qmp->dp_com;
-	bool reverse = qphy->qmp->orientation == TYPEC_ORIENTATION_REVERSE;
+	bool reverse = false;
 	u32 val;
 
 	if (dp_opts->lanes == 4) {
-		writel(0xa, dp_com + QPHY_V3_DP_COM_RESET_OVRD_CTRL);
-		writel(DP_MODE, dp_com + QPHY_V3_DP_COM_PHY_MODE_CTRL);
+		/* Reset the PHY to mux only DisplayPort on the 4 lanes */
+		qphy_setbits(dp_com, QPHY_V3_DP_COM_RESET_OVRD_CTRL,
+			     SW_DPPHY_RESET_MUX | SW_USB3PHY_RESET_MUX);
 
-		writel(0x1, dp_com + QPHY_V3_DP_COM_SW_RESET);
+		qphy_setbits(dp_com, QPHY_V3_DP_COM_PHY_MODE_CTRL, DP_MODE);
+		qphy_clrbits(dp_com, QPHY_V3_DP_COM_PHY_MODE_CTRL, USB3_MODE);
 
+		qphy_setbits(dp_com, QPHY_V3_DP_COM_SW_RESET, SW_RESET);
+
+		qphy_setbits(dp_com, QPHY_V3_DP_COM_TYPEC_CTRL, 0x02);
 		if (reverse)
-			writel(0x03, dp_com + QPHY_V3_DP_COM_TYPEC_CTRL);
+			qphy_setbits(dp_com, QPHY_V3_DP_COM_TYPEC_CTRL, 0x01);
 		else
-			writel(0x02, dp_com + QPHY_V3_DP_COM_TYPEC_CTRL);
+			qphy_clrbits(dp_com, QPHY_V3_DP_COM_TYPEC_CTRL, 0x01);
 
-		writel(0x0, dp_com + QPHY_V3_DP_COM_SWI_CTRL);
-		writel(0x0, dp_com + QPHY_V3_DP_COM_SW_RESET);
+		qphy_clrbits(dp_com, QPHY_V3_DP_COM_SWI_CTRL, 0x03);
+		qphy_clrbits(dp_com, QPHY_V3_DP_COM_SW_RESET, SW_RESET);
 	}
 
 	val = DP_PHY_PD_CTL_PWRDN | DP_PHY_PD_CTL_AUX_PWRDN |
