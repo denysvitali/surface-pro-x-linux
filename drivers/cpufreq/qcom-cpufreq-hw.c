@@ -374,34 +374,17 @@ static const struct of_device_id qcom_cpufreq_hw_match[] = {
 };
 MODULE_DEVICE_TABLE(of, qcom_cpufreq_hw_match);
 
-static int qcom_cpufreq_hw_lmh_init(struct cpufreq_policy *policy,
-				    struct device *dev, int index)
+static int qcom_cpufreq_hw_lmh_init(struct cpufreq_policy *policy)
 {
 	struct qcom_cpufreq_data *data = policy->driver_data;
-	char irq_name[15];
-	int ret;
 
-	/*
-	 * Look for LMh interrupt. If no interrupt line is specified /
-	 * if there is an error, allow cpufreq to be enabled as usual.
-	 */
-	data->throttle_irq = of_irq_get(dev->of_node, index);
 	if (data->throttle_irq <= 0)
-		return data->throttle_irq == -EPROBE_DEFER ? -EPROBE_DEFER : 0;
+		return 0;
 
 	data->cancel_throttle = false;
 	data->policy = policy;
 
-	mutex_init(&data->throttle_lock);
-	INIT_DEFERRABLE_WORK(&data->throttle_work, qcom_lmh_dcvs_poll);
-
-	snprintf(irq_name, sizeof(irq_name), "dcvsh-irq-%u", policy->cpu);
-	ret = request_threaded_irq(data->throttle_irq, NULL, qcom_lmh_dcvs_handle_irq,
-				   IRQF_ONESHOT, irq_name, data);
-	if (ret) {
-		dev_err(dev, "Error registering %s: %d\n", irq_name, ret);
-		return 0;
-	}
+	enable_irq(data->throttle_irq);
 
 	return 0;
 }
@@ -416,7 +399,7 @@ static void qcom_cpufreq_hw_lmh_exit(struct qcom_cpufreq_data *data)
 	mutex_unlock(&data->throttle_lock);
 
 	cancel_delayed_work_sync(&data->throttle_work);
-	free_irq(data->throttle_irq, data);
+	disable_irq(data->throttle_irq);
 }
 
 static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
@@ -543,7 +526,9 @@ static struct qcom_cpufreq_data *qcom_cpufreq_init_domains(struct platform_devic
 	void *__iomem *base;
 	struct device *dev = &pdev->dev;
 	unsigned int index;
+	char *irq_name;
 	int cpu;
+	int irq;
 	int ret;
 
 	domains = devm_kcalloc(dev, MAX_FREQ_DOMAINS, sizeof(*domains), GFP_KERNEL);
@@ -581,6 +566,34 @@ static struct qcom_cpufreq_data *qcom_cpufreq_init_domains(struct platform_devic
 		domain->dev = dev;
 		domain->base = base;
 		domain->soc_data = of_device_get_match_data(dev);
+
+		mutex_init(&domain->throttle_lock);
+		INIT_DEFERRABLE_WORK(&domain->throttle_work, qcom_lmh_dcvs_poll);
+
+		/*
+		 * Look for LMh interrupt. If no interrupt line is specified /
+		 * if there is an error, allow cpufreq to be enabled as usual.
+		 */
+		irq = of_irq_get(dev->of_node, index);
+		if (irq == -EPROBE_DEFER)
+			return ERR_PTR(irq);
+
+		if (irq > 0) {
+			irq_name = devm_kasprintf(dev, GFP_KERNEL, "dcvsh-irq-%u", index);
+			if (!irq_name)
+				return ERR_PTR(-ENOMEM);
+
+			ret = devm_request_threaded_irq(dev, irq, NULL,
+							qcom_lmh_dcvs_handle_irq,
+							IRQF_ONESHOT | IRQF_NO_AUTOEN,
+							irq_name, domain);
+			if (ret) {
+				dev_err(dev, "Error registering %s: %d\n", irq_name, ret);
+				return ERR_PTR(ret);
+			}
+
+			domain->throttle_irq = irq;
+		}
 	}
 
 	return domains;
