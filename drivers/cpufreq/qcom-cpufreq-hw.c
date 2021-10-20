@@ -51,7 +51,7 @@ struct qcom_cpufreq_data {
 	int throttle_irq;
 	bool cancel_throttle;
 	struct delayed_work throttle_work;
-	struct cpufreq_policy *policy;
+	cpumask_var_t cpus;
 };
 
 static unsigned long cpu_hw_rate, xo_rate;
@@ -279,10 +279,10 @@ static unsigned int qcom_lmh_get_throttle_freq(struct qcom_cpufreq_data *data)
 static void qcom_lmh_dcvs_notify(struct qcom_cpufreq_data *data)
 {
 	unsigned long max_capacity, capacity, freq_hz, throttled_freq;
-	struct cpufreq_policy *policy = data->policy;
-	int cpu = cpumask_first(policy->cpus);
+	int cpu = cpumask_first(data->cpus);
 	struct device *dev = get_cpu_device(cpu);
 	struct dev_pm_opp *opp;
+	unsigned int max_freq;
 	unsigned int freq;
 
 	/*
@@ -301,13 +301,14 @@ static void qcom_lmh_dcvs_notify(struct qcom_cpufreq_data *data)
 	/* Update thermal pressure */
 
 	max_capacity = arch_scale_cpu_capacity(cpu);
-	capacity = mult_frac(max_capacity, throttled_freq, policy->cpuinfo.max_freq);
+	max_freq = cpufreq_get_hw_max_freq(cpu);
+	capacity = mult_frac(max_capacity, throttled_freq, max_freq);
 
 	/* Don't pass boost capacity to scheduler */
 	if (capacity > max_capacity)
 		capacity = max_capacity;
 
-	arch_set_thermal_pressure(policy->cpus, max_capacity - capacity);
+	arch_set_thermal_pressure(data->cpus, max_capacity - capacity);
 
 	/*
 	 * In the unlikely case policy is unregistered do not enable
@@ -382,7 +383,7 @@ static int qcom_cpufreq_hw_lmh_init(struct cpufreq_policy *policy)
 		return 0;
 
 	data->cancel_throttle = false;
-	data->policy = policy;
+	cpumask_copy(data->cpus, policy->cpus);
 
 	enable_irq(data->throttle_irq);
 
