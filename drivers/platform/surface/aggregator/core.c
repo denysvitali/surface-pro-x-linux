@@ -613,6 +613,20 @@ static const struct acpi_gpio_mapping ssam_acpi_gpios[] = {
 	{ },
 };
 
+static int acpi_attach_callback(struct acpi_dep_data* dep, void* data) {
+  struct acpi_device *adev;
+  acpi_bus_get_device(dep->consumer, &adev);
+  if (adev) {
+  	adev->dep_unmet--;
+  	if (!adev->dep_unmet)
+  		acpi_bus_attach(adev, true);
+  }
+  
+  list_del(&dep->node);
+  kfree(dep);
+  return 0;
+}
+
 static int ssam_serial_hub_probe(struct serdev_device *serdev)
 {
 	struct acpi_device *ssh = ACPI_COMPANION(&serdev->dev);
@@ -719,8 +733,9 @@ static int ssam_serial_hub_probe(struct serdev_device *serdev)
 	if (status)
 		goto err_clients;
 
-	if (ssh)
-		acpi_walk_dep_device_list(ssh);
+	if (ssh) {
+		acpi_walk_dep_device_list(ssh, acpi_attach_callback, NULL);
+  }
 
 	return 0;
 

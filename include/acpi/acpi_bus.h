@@ -544,6 +544,8 @@ void acpi_set_modalias(struct acpi_device *adev, const char *default_id,
 int acpi_create_dir(struct acpi_device *);
 void acpi_remove_dir(struct acpi_device *);
 
+void acpi_bus_attach(struct acpi_device *device, bool first_pass);
+
 static inline bool acpi_device_enumerated(struct acpi_device *adev)
 {
 	return adev && adev->flags.initialized && adev->flags.visited;

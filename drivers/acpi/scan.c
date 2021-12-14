@@ -2137,7 +2137,7 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
 	return ret;
 }
 
-static void acpi_bus_attach(struct acpi_device *device, bool first_pass)
+void acpi_bus_attach(struct acpi_device *device, bool first_pass)
 {
 	struct acpi_device *child;
 	bool skip = !first_pass && device->flags.visited;
@@ -2198,6 +2198,8 @@ static void acpi_bus_attach(struct acpi_device *device, bool first_pass)
 	if (!skip && device->handler && device->handler->hotplug.notify_online)
 		device->handler->hotplug.notify_online(device);
 }
+
+EXPORT_SYMBOL_GPL(acpi_bus_attach);
 
 static int acpi_dev_get_first_consumer_dev_cb(struct acpi_dep_data *dep, void *data)
 {
